@@ -1,0 +1,14 @@
+# Telegram Bot API
+python-telegram-bot==20.7
+
+# Twitter API
+tweepy==4.14.0
+
+# HTTP Requests
+requests==2.31.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Timezone Support
+pytz==2023.3
