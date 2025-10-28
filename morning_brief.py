@@ -84,10 +84,10 @@ def fetch_twitter_feed(hours=24):
                 
             user_id = user.data.id
             
-            # Get recent tweets
+            # Get recent tweets (reduced to 5 to avoid rate limits)
             tweets = twitter_client.get_users_tweets(
                 id=user_id,
-                max_results=10,
+                max_results=5,
                 tweet_fields=['created_at', 'public_metrics', 'text'],
                 exclude=['retweets', 'replies']
             )
@@ -120,19 +120,18 @@ def fetch_portfolio_prices():
     # Get all CoinGecko IDs
     coin_ids = ','.join(ids_map.values())
     
-    url = f"https://pro-api.coingecko.com/api/v3/simple/price"
+    url = "https://pro-api.coingecko.com/api/v3/simple/price"
     params = {
         'ids': coin_ids,
         'vs_currencies': 'usd',
-        'include_24hr_change': 'true',
-        'include_24hr_vol': 'true'
+        'include_24hr_change': 'true'
     }
     headers = {
-        'X-Cg-Pro-Api-Key': api_key
+        'x-cg-pro-api-key': api_key
     }
     
     try:
-        response = requests.get(url, params=params, headers=headers)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()
         
@@ -142,14 +141,15 @@ def fetch_portfolio_prices():
             if cg_id in data:
                 portfolio_data[symbol] = {
                     'price': data[cg_id]['usd'],
-                    'change_24h': data[cg_id].get('usd_24h_change', 0),
-                    'volume_24h': data[cg_id].get('usd_24h_vol', 0)
+                    'change_24h': data[cg_id].get('usd_24h_change', 0)
                 }
         
         return portfolio_data
         
     except Exception as e:
         print(f"Error fetching portfolio prices: {e}")
+        if 'response' in locals():
+            print(f"Response: {response.text}")
         return {}
 
 def fetch_market_overview():
@@ -164,11 +164,11 @@ def fetch_market_overview():
         'include_market_cap': 'true'
     }
     headers = {
-        'X-Cg-Pro-Api-Key': api_key
+        'x-cg-pro-api-key': api_key
     }
     
     try:
-        response = requests.get(url, params=params, headers=headers)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()
         
@@ -189,6 +189,8 @@ def fetch_market_overview():
         
     except Exception as e:
         print(f"Error fetching market overview: {e}")
+        if 'response' in locals():
+            print(f"Response: {response.text}")
         return {}
 
 def analyze_tweets(tweets_by_account):
@@ -277,12 +279,14 @@ def send_telegram_message(message):
     }
     
     try:
-        response = requests.post(url, data=data)
+        response = requests.post(url, data=data, timeout=10)
         response.raise_for_status()
         print(f"✅ Message sent successfully at {datetime.now(TIMEZONE)}")
         return True
     except Exception as e:
         print(f"❌ Error sending message: {e}")
+        if 'response' in locals():
+            print(f"Response: {response.text}")
         return False
 
 def run_morning_brief():
